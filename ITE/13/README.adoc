@@ -1,0 +1,194 @@
+= ITE-13: Git Repository Attestation Storage Specification
+:source-highlighter: pygments
+:toc: preamble
+:toclevels: 2
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+.Metadata
+[cols="2"]
+|===
+| ITE
+| 0013
+
+| Title
+| Git Repository Attestation Storage Specification
+
+| Sponsor
+| link:https://github.com/wlynch[Billy Lynch]
+
+| Status
+| Active :smile:
+
+| Type
+| Standards
+
+| Created
+| 2025-08-01
+
+|===
+
+
+[[abstract]]
+== Abstract
+
+This specification defines how to create and store attestations for Git source code entities using the in-toto attestation framework and store them in git repositories using a standardized reference namespace.
+
+[[specification]]
+== Specification
+
+### Storage Format
+
+#### Reference Namespace
+
+Attestations MUST be stored in the `refs/attestations/<type>` namespace, corresponding to the Git object type:
+
+- **Commit attestations**: `refs/attestations/commits`
+- **Tree attestations**: `refs/attestations/trees`
+- **Blob attestations**: `refs/attestations/blobs`
+
+Additional types may be created under the `refs/attestations` namespace to store attestations about other types, even non-Git objects.
+
+#### File layout
+
+Each reference in the attestation namespace points to a Git commit containing attestation bundle files.
+The directory structure within each commit organizes attestations by the Git object hash being attested to,
+with each object hash forming a directory name containing related attestation files.
+
+```tree
+refs/attestations/commits
+├── a1b2c3d4e5f6789012345678901234567890abcd/
+│   └── attestations.intoto.jsonl
+└── b2c3d4e5f6789012345678901234567890abcdef1/
+    ├── pull_request.intoto.jsonl
+    ├── push.intoto.jsonl
+    └── deploy.intoto.jsonl
+```
+
+```tree
+refs/attestations/trees
+├── 789abc0123456789012345678901234567890def/
+│   └── attestations.intoto.jsonl
+└── def0123456789012345678901234567890abc789/
+    └── security_audit.intoto.jsonl
+```
+
+All source attestations MUST use the [Attestation bundle](./bundle.md) format.
+
+Attestations in the bundle MAY have different subjects, but they SHOULD
+all be relevant to the storage folders git object hash.
+
+#### File Naming Convention
+
+Attestation bundles SHOULD be named to create logical groupings of attestations.
+
+These may correspond to particular events:
+
+- Pre-submit (e.g. Pull Request) attestations
+- Post-submit attestations
+- CI/CD Deploy
+
+Clients should choose filenames to make it easy for other verifiers to discover information they are looking for.
+
+##### Pushing / pulling attestations
+
+Attestations are stored in [git references](https://git-scm.com/book/en/v2/Git-Internals-Git-References),
+and can be pushed or pulled like any other Git ref.
+
+The latest commit in each attestation ref represents the current state of attestations for that Git object type.
+It is the responsibility of clients to push and pull attestation references to keep them synchronized across repositories.
+
+##### Resolving conflicts
+
+Clients SHOULD be careful to avoid conflicts when editing any `refs/attestations/` ref, though normal git merge semantics apply.
+Tips for avoiding conflicts:
+
+- Choose attestation filenames that are unlikely to conflict with other automation.
+- Check for updates frequently.
+- Avoid force-pushes to avoid losing content.
+
+### Discovery Workflow
+
+#### Basic Discovery Process
+
+To discover attestations for a Git object:
+
+1. **Identify the target object**: Determine the Git object hash (commit, tree, or blob) you want to find attestations for
+2. **Check the appropriate namespace**: Look in the corresponding `refs/attestations/<type>` namespace
+3. **Navigate to the object directory**: Find the directory named with the target object's hash
+4. **Enumerate attestation files**: List all `.intoto.jsonl` files in that directory
+5. **Parse and verify**: Read the attestation bundles and verify signatures as needed
+
+#### Finding Attestations for a Git Tag
+
+To find attestations for a specific git tag, first resolve the tag to its corresponding commit SHA, then look up attestations in the commits namespace:
+
+```bash
+# Get the commit SHA for a tag
+$ git rev-parse v1.2.3
+a1b2c3d4e5f6789012345678901234567890abcd
+
+# Check for attestations about that commit
+$ git ls-tree refs/attestations/commits a1b2c3d4e5f6789012345678901234567890abcd/
+100644 blob 1234567890abcdef... attestations.intoto.jsonl
+100644 blob abcdef1234567890... release.intoto.jsonl
+```
+
+[[motivation]]
+== Motivation
+
+Source code repositories require integrity verification and provenance tracking at the git object level. This specification provides:
+
+- Git-native storage using `refs/attestations` namespace
+- Integration with existing in-toto predicate framework
+
+[[reasoning]]
+== Reasoning
+
+With the focus on SLSA Source provenance, there is a desire to store attestations about Git objects directly in the repository.
+
+Currently we are aware of 3 different tools that store attestations in Git repositories in slightly different ways:
+- [Sigstore Gitsign](https://github.com/sigstore/gitsign) (refs/attestations)
+- [Gittuf](https://github.com/sigstore/gitsign (refs/gittuf/attestations)
+- [SLSA Source PoC](https://github.com/slsa-framework/slsa-source-poc) (refs/notes)
+
+Ideally, these tools should store attestations in a similar way to allow interoperability and ease of use.
+This proposal aims to standardize the storage of attestations in Git repositories using the `refs/attestations` namespace to enable this.
+
+[[backwards-compatibility]]
+== Backwards Compatibility
+
+n/a
+
+[[security]]
+== Security
+
+n/a - This is a storage specification where where attestations should live, and does not introduce any fundamental changes to the in-toto security model.
+
+[[infrastructure-requirements]]
+== Infrastructure Requirements
+
+None.
+
+[[testing]]
+== Testing
+
+If your implementation includes code, include this section describing how your
+changes will be tested.
+
+[[prototype-implementation]]
+== Prototype Implementation
+
+If your ITE includes code changes, provide some links to the prototype
+implementation of these changes.
+
+TODO (we will use one or all of the existing tools as a prototype implementation)
+
+[[references]]
+== References
+
