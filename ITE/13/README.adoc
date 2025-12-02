@@ -52,7 +52,7 @@ Attestations MUST be stored in the `refs/attestations/<type>` namespace, corresp
 - **Tree attestations**: `refs/attestations/trees`
 - **Blob attestations**: `refs/attestations/blobs`
 
-Additional types may be created under the `refs/attestations` namespace to store attestations about other types, even non-Git objects.
+Additional types may be created under the `refs/attestations/` namespace to store attestations about other types, even non-Git objects.
 
 #### File layout
 
@@ -78,10 +78,10 @@ refs/attestations/trees
     └── security_audit.intoto.jsonl
 ```
 
-All source attestations MUST use the [Attestation bundle](./bundle.md) format.
+All source attestations MUST use the [Attestation bundle](https://github.com/in-toto/attestation/blob/main/spec/v1/bundle.md) format.
 
 Attestations in the bundle MAY have different subjects, but they SHOULD
-all be relevant to the storage folders git object hash.
+all be relevant to the storage folder's git object hash.
 
 #### File Naming Convention
 
