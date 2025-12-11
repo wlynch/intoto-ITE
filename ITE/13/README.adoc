@@ -154,7 +154,7 @@ With the focus on SLSA Source provenance, there is a desire to store attestation
 
 Currently we are aware of 3 different tools that store attestations in Git repositories in slightly different ways:
 - [Sigstore Gitsign](https://github.com/sigstore/gitsign) (refs/attestations)
-- [Gittuf](https://github.com/sigstore/gitsign (refs/gittuf/attestations)
+- [gittuf](https://github.com/sigstore/gitsign (refs/gittuf/attestations)
 - [SLSA Source PoC](https://github.com/slsa-framework/slsa-source-poc) (refs/notes)
 
 Ideally, these tools should store attestations in a similar way to allow interoperability and ease of use.
